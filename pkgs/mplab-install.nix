@@ -158,12 +158,17 @@ pkgs.writeShellScriptBin "mplab-install" ''
 
     chmod +x "$installer"
 
+    mkdir -p "$INSTALL_DIR/mplabx"
+
     echo ""
-    echo "Running MPLAB X installer..."
-    echo "Installing to: /opt/microchip/mplabx/v$version"
+    echo "Running MPLAB X installer in FHS environment..."
+    echo "Installing to: $INSTALL_DIR/mplabx/v$version"
     echo ""
 
-    sudo ./$installer --nolibrarycheck -- --mode text --installdir /opt/microchip/mplabx/v$version
+    # Must run inside mplabx-env: the bundled .run is dynamically linked for
+    # FHS Linux (see https://nix.dev/permalink/stub-ld). sudo would re-exec on
+    # the host and break; /opt/microchip is user-owned after setup above.
+    ${mplabxFhs}/bin/mplabx-env -c "cd \"$DOWNLOAD_DIR\" && ./$installer --nolibrarycheck -- --mode text --installdir \"$INSTALL_DIR/mplabx/v$version\""
 
     echo ""
     echo "MPLAB X v$version installation complete!"
