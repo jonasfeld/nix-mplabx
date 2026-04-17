@@ -9,7 +9,7 @@ with lib; let
   cfg = config.programs.mplabx;
 in {
   options.programs.mplabx = {
-    enable = mkEnableOption "MPLAB X IDE and XC compiler support";
+    enable = mkEnableOption "MPLAB X IDE and XC32/XC16 compiler support";
 
     mplabxVersion = mkOption {
       type = types.str;
@@ -21,6 +21,12 @@ in {
       type = types.str;
       default = "v5.10";
       description = "XC32 compiler version to use";
+    };
+
+    xc16Version = mkOption {
+      type = types.str;
+      default = "v2.10";
+      description = "XC16 compiler version to use";
     };
 
     users = mkOption {

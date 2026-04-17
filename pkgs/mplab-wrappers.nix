@@ -130,6 +130,7 @@
 
     MPLABX_DIR="/opt/microchip/mplabx"
     XC32_DIR="/opt/microchip/xc32"
+    XC16_DIR="/opt/microchip/xc16"
 
     if [ -d "$MPLABX_DIR" ]; then
       echo "MPLAB X IDE versions:"
@@ -152,7 +153,18 @@
     fi
 
     echo ""
-    echo "Set MPLABX_VERSION or XC32_VERSION to use a specific version."
+
+    if [ -d "$XC16_DIR" ]; then
+      echo "XC16 Compiler versions:"
+      for v in $(ls -1 "$XC16_DIR" 2>/dev/null | sort -V); do
+        echo "  $v"
+      done
+    else
+      echo "XC16 Compiler: not installed"
+    fi
+
+    echo ""
+    echo "Set MPLABX_VERSION, XC32_VERSION, or XC16_VERSION to use a specific version."
     echo "Example: MPLABX_VERSION=v6.25 mplab-ide"
   '';
 in

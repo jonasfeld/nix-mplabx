@@ -4,6 +4,7 @@
   pkgs,
   mplabxVersion,
   xc32Version,
+  xc16Version,
   mplabxFhs,
 }:
 pkgs.writeShellScriptBin "mplab-install" ''
@@ -15,11 +16,12 @@ pkgs.writeShellScriptBin "mplab-install" ''
   # Available versions (update these as Microchip releases new versions)
   MPLABX_VERSIONS=("6.30" "6.25" "6.20" "6.15" "6.10" "6.05" "6.00")
   XC32_VERSIONS=("5.10" "4.45" "4.40" "4.35" "4.30" "4.21" "4.20")
+  XC16_VERSIONS=("2.10" "2.00")
 
   # Microchip referrer URL (required for downloads)
   REFERRER="https://www.microchip.com/en-us/tools-resources/develop/mplab-x-ide"
 
-  echo "=== MPLAB X / XC32 Installation Helper ==="
+  echo "=== MPLAB X / XC32 / XC16 Installation Helper ==="
   echo ""
 
   # Show currently installed versions
@@ -28,6 +30,9 @@ pkgs.writeShellScriptBin "mplab-install" ''
   fi
   if [ -d "$INSTALL_DIR/xc32" ] && [ "$(ls -A $INSTALL_DIR/xc32 2>/dev/null)" ]; then
     echo "Installed XC32 versions: $(ls $INSTALL_DIR/xc32/ 2>/dev/null | tr '\n' ' ')"
+  fi
+  if [ -d "$INSTALL_DIR/xc16" ] && [ "$(ls -A $INSTALL_DIR/xc16 2>/dev/null)" ]; then
+    echo "Installed XC16 versions: $(ls $INSTALL_DIR/xc16/ 2>/dev/null | tr '\n' ' ')"
   fi
   echo ""
 
@@ -107,6 +112,29 @@ pkgs.writeShellScriptBin "mplab-install" ''
     echo "XC32 v$version installation complete!"
   }
 
+  install_xc16() {
+    local version="$1"
+
+    echo ""
+    echo "=== Installing XC16 Compiler v$version ==="
+
+    local installer="xc16-v''${version}-full-install-linux64-installer.run"
+    local url="https://ww1.microchip.com/downloads/aemDocuments/documents/DEV/ProductDocuments/SoftwareTools/$installer"
+
+    download_if_missing "$url" "$installer"
+    chmod +x "$DOWNLOAD_DIR/$installer"
+
+    echo ""
+    echo "Running XC16 installer in FHS environment..."
+    echo "When prompted, install to: /opt/microchip/xc16/v$version"
+    echo ""
+
+    ${mplabxFhs}/bin/mplabx-env -c "cd $DOWNLOAD_DIR && ./$installer --mode text"
+
+    echo ""
+    echo "XC16 v$version installation complete!"
+  }
+
   install_mplabx() {
     local version="$1"
 
@@ -145,11 +173,14 @@ pkgs.writeShellScriptBin "mplab-install" ''
   echo "What would you like to install?"
   echo ""
   echo "  1) XC32 Compiler only"
-  echo "  2) MPLAB X IDE/IPE only"
-  echo "  3) Both XC32 and MPLAB X"
-  echo "  4) Exit"
+  echo "  2) XC16 Compiler only"
+  echo "  3) MPLAB X IDE/IPE only"
+  echo "  4) XC32 and MPLAB X"
+  echo "  5) XC16 and MPLAB X"
+  echo "  6) XC32, XC16, and MPLAB X"
+  echo "  7) Exit"
   echo ""
-  read -p "Enter choice [1-4]: " main_choice
+  read -p "Enter choice [1-7]: " main_choice
 
   case $main_choice in
     1)
@@ -157,16 +188,34 @@ pkgs.writeShellScriptBin "mplab-install" ''
       install_xc32 "$XC32_VERSION"
       ;;
     2)
+      XC16_VERSION=$(select_version "Select XC16 version to install:" "''${XC16_VERSIONS[@]}")
+      install_xc16 "$XC16_VERSION"
+      ;;
+    3)
       MPLABX_VERSION=$(select_version "Select MPLAB X version to install:" "''${MPLABX_VERSIONS[@]}")
       install_mplabx "$MPLABX_VERSION"
       ;;
-    3)
+    4)
       XC32_VERSION=$(select_version "Select XC32 version to install:" "''${XC32_VERSIONS[@]}")
       MPLABX_VERSION=$(select_version "Select MPLAB X version to install:" "''${MPLABX_VERSIONS[@]}")
       install_xc32 "$XC32_VERSION"
       install_mplabx "$MPLABX_VERSION"
       ;;
-    4)
+    5)
+      XC16_VERSION=$(select_version "Select XC16 version to install:" "''${XC16_VERSIONS[@]}")
+      MPLABX_VERSION=$(select_version "Select MPLAB X version to install:" "''${MPLABX_VERSIONS[@]}")
+      install_xc16 "$XC16_VERSION"
+      install_mplabx "$MPLABX_VERSION"
+      ;;
+    6)
+      XC32_VERSION=$(select_version "Select XC32 version to install:" "''${XC32_VERSIONS[@]}")
+      XC16_VERSION=$(select_version "Select XC16 version to install:" "''${XC16_VERSIONS[@]}")
+      MPLABX_VERSION=$(select_version "Select MPLAB X version to install:" "''${MPLABX_VERSIONS[@]}")
+      install_xc32 "$XC32_VERSION"
+      install_xc16 "$XC16_VERSION"
+      install_mplabx "$MPLABX_VERSION"
+      ;;
+    7)
       echo "Exiting."
       exit 0
       ;;
@@ -184,6 +233,10 @@ pkgs.writeShellScriptBin "mplab-install" ''
     echo "XC32 versions installed: $(ls $INSTALL_DIR/xc32/ 2>/dev/null | tr '\n' ' ')"
   fi
 
+  if [ -d "$INSTALL_DIR/xc16" ] && [ "$(ls -A $INSTALL_DIR/xc16 2>/dev/null)" ]; then
+    echo "XC16 versions installed: $(ls $INSTALL_DIR/xc16/ 2>/dev/null | tr '\n' ' ')"
+  fi
+
   if [ -d "$INSTALL_DIR/mplabx" ] && [ "$(ls -A $INSTALL_DIR/mplabx 2>/dev/null)" ]; then
     echo "MPLAB X versions installed: $(ls $INSTALL_DIR/mplabx/ 2>/dev/null | tr '\n' ' ')"
   fi
@@ -191,7 +244,8 @@ pkgs.writeShellScriptBin "mplab-install" ''
   echo ""
   echo "Wrappers will auto-detect the latest installed version."
   echo "To use a specific version, set environment variables:"
-  echo "  export MPLABX_VERSION=v6.30"
-  echo "  export XC32_VERSION=v5.10"
+  echo "  export MPLABX_VERSION=${mplabxVersion}"
+  echo "  export XC32_VERSION=${xc32Version}"
+  echo "  export XC16_VERSION=${xc16Version}"
   echo ""
 ''

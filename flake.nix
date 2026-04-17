@@ -1,5 +1,5 @@
 {
-  description = "MPLAB X IDE, IPE, and XC32 compiler for NixOS";
+  description = "MPLAB X IDE, IPE, and XC32/XC16 compilers for NixOS";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -15,6 +15,7 @@
     # Default versions (can be overridden)
     defaultMplabxVersion = "v6.30";
     defaultXc32Version = "v5.10";
+    defaultXc16Version = "v2.10";
 
     # Package builders with configurable versions
     mkMplabxFhs = import ./pkgs/mplabx-fhs.nix {inherit pkgs;};
@@ -30,12 +31,18 @@
         inherit pkgs xc32Version;
       };
 
+    mkXc16Wrappers = {xc16Version ? defaultXc16Version}:
+      import ./pkgs/xc16-wrappers.nix {
+        inherit pkgs xc16Version;
+      };
+
     mkMplabInstall = {
       mplabxVersion ? defaultMplabxVersion,
       xc32Version ? defaultXc32Version,
+      xc16Version ? defaultXc16Version,
     }:
       import ./pkgs/mplab-install.nix {
-        inherit pkgs mplabxVersion xc32Version;
+        inherit pkgs mplabxVersion xc32Version xc16Version;
         mplabxFhs = mkMplabxFhs;
       };
   in {
@@ -44,6 +51,7 @@
       mplabx-fhs = mkMplabxFhs;
       mplab-wrappers = mkMplabWrappers {};
       xc32-wrappers = mkXc32Wrappers {};
+      xc16-wrappers = mkXc16Wrappers {};
       mplab-install = mkMplabInstall {};
 
       # Convenience bundle with all tools
@@ -52,6 +60,7 @@
         paths = [
           (mkMplabWrappers {})
           (mkXc32Wrappers {})
+          (mkXc16Wrappers {})
           (mkMplabInstall {})
         ];
       };
@@ -59,7 +68,7 @@
 
     # Parameterized package builders for custom versions
     lib.${system} = {
-      inherit mkMplabxFhs mkMplabWrappers mkXc32Wrappers mkMplabInstall;
+      inherit mkMplabxFhs mkMplabWrappers mkXc32Wrappers mkXc16Wrappers mkMplabInstall;
     };
 
     # NixOS module
@@ -71,6 +80,7 @@
       mplabx-fhs = mkMplabxFhs;
       mplab-wrappers = mkMplabWrappers {};
       xc32-wrappers = mkXc32Wrappers {};
+      xc16-wrappers = mkXc16Wrappers {};
       mplab-install = mkMplabInstall {};
     };
   };
